@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.6.0" name="runtime">
+
+
+  <feature name="runtime" version="1" install="auto">
+    <feature>jdbc</feature>
+    <feature>pax-jdbc</feature>
+    <feature>pax-jdbc-config</feature>
+    <feature>pax-jdbc-postgresql</feature>
+    <feature>pax-jdbc-h2</feature>
+    <feature>pax-jdbc-pool-hikaricp</feature>
+    <feature>camel-jsonpath</feature>
+    <feature>camel-zip-deflater</feature>
+    <feature>camel-jdbc</feature>
+    <feature>camel-jetty</feature>
+    <feature>camel-openapi-java</feature>
+    <feature>camel-http</feature>
+    <feature>camel-jetty</feature>
+    <feature>camel-jackson</feature>
+    <feature>camel-paho</feature>
+    <feature>camel-minio</feature>
+    <feature>camel-groovy</feature>
+    <feature>camel-cron</feature>
+    <feature>camel-quartz</feature>
+    <bundle start-level="80">mvn:org.apache.commons/commons-csv/1.8</bundle>
+  </feature>
+
+
+</features>

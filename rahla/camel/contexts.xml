@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+           xsi:schemaLocation="
+         http://www.osgi.org/xmlns/blueprint/v1.0.0 https://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+         http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/blueprint/camel-blueprint.xsd
+         http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0 https://aries.apache.org/schemas/blueprint-cm/blueprint-cm-1.1.0.xsd">
+
+    <cm:property-placeholder id="settings.props" persistent-id="settings" update-strategy="reload"/>
+
+
+    <reference id="beanFactory" interface="rahla.api.GroovyBeanFactory"/>
+    <reference id="assetDataSource" interface="javax.sql.DataSource" filter="(dataSourceName=asset)"/>
+    
+    <bean id="registry" class="com.codahale.metrics.MetricRegistry"/>
+    <bean id="routeStats" class="org.apache.camel.component.metrics.routepolicy.MetricsRoutePolicyFactory">
+        <property name="metricsRegistry" ref="registry"/>
+    </bean>
+
+    <camelContext useMDCLogging="true"
+                  xmlns="http://camel.apache.org/schema/blueprint"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://camel.apache.org/schema/blueprint https://camel.apache.org/schema/blueprint/camel-blueprint-3.20.2.xsd">
+
+        <onException>
+            <exception>java.lang.Exception</exception>
+            <redeliveryPolicy maximumRedeliveries="0" logStackTrace="false" />
+            <handled>
+                <constant>false</constant>
+            </handled>
+            <to uri="direct:error_handler"/>
+        </onException>
+
+        <restConfiguration  component="jetty" bindingMode="off" 
+                            contextPath="{{REST_CONTEXT_PATH}}" 
+                            port="8183" 
+                            host="0.0.0.0" 
+                            apiContextRouteId="api-docs" 
+                            apiContextPath="api-docs" 
+                            enableCORS="true">
+            <dataFormatProperty key="prettyPrint" value="true"/>
+            <apiProperty key="api.version" value="1.0"/>
+            <apiProperty key="api.title" value="Protack data service"/>
+            <apiProperty key="api.description" value="This could be your marketing text"/>
+            <apiProperty key="api.contact.name" value="datatactics Supoprt"/>
+            <apiProperty key="api.contact.email" value="support@datatactics.de"/>
+            <apiProperty key="api.contact.url" value="www.datatactics.de"/>
+        </restConfiguration>
+
+        <rest path="/">
+            <get path="/hello_world" >
+                <to uri="direct:hello_world"/>
+            </get>
+        </rest>
+
+        <route id="hello_world">
+            <from uri="direct:hello_world"/>
+            <log message="HELLO WORLD" loggingLevel="INFO"/>
+        </route>
+
+        <route id="test_processor">
+            <from uri="direct:test_processor"/>
+            <process ref="Test"/>
+            <log message="${body}" loggingLevel="INFO"/>
+        </route>
+
+        <route id="read_file">
+            <from uri="file:///data"/>
+            <process ref="CsvProcessor"/>
+            <log message="${body}" loggingLevel="INFO"/>
+        </route>
+
+        <route id="sql_example">
+            <from uri="direct:sql_example"/>
+            <process ref="SqlExample"/>
+            <log message="${body}" loggingLevel="INFO"/>
+        </route>
+
+        <route id="local-testing">
+            <from uri="timer://test?fixedRate=true&amp;period=5000000" />
+            <to uri="direct:hello_world"/>
+            <to uri="direct:test_processor"/>
+            <to uri="direct:sql_example"/>
+        </route>
+
+
+    </camelContext>
+
+    <bean id="Test" factory-ref="beanFactory" factory-method="createBean">
+        <argument value="resource:file:/rahla/deploy/Test.groovy"/>
+    </bean>
+
+    <bean id="SqlExample" factory-ref="beanFactory" factory-method="createBean">
+        <argument value="resource:file:/rahla/deploy/SqlExample.groovy"/>
+        <property name="dataSource" ref="assetDataSource"/>
+    </bean>
+
+    <bean id="CsvProcessor" factory-ref="beanFactory" factory-method="createBean">
+        <argument value="resource:file:/rahla/deploy/CsvProcessor.groovy"/>
+    </bean>
+
+</blueprint>
